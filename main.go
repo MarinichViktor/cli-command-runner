@@ -8,6 +8,15 @@ import (
 	"log"
 )
 
+//func main() {
+//	cmd := exec.Command("docker", "exec", "-it", "af57f426e5f5", "bash")
+//	//cmd.Stdin = os.Stdin
+//	cmd.Stdout = os.Stdout
+//	//cmd.Stderr = os.Stderr
+//	cmd.Start()
+//	cmd.Wait()
+//}
+
 func main() {
 	g, err := gocui.NewGui(gocui.Output256)
 	if err != nil {
@@ -25,32 +34,16 @@ func main() {
 item2
 item3`,
 		X0: func(i int) int {
-			return 2
+			return 1
 		},
 		Y0: func(i int) int {
-			return 2
+			return 1
 		},
 		X1: func(i int) int {
 			return 25
 		},
 		Y1: func(maxY int) int {
 			return maxY / 2
-		},
-	}
-	mainView := views.ViewBox{
-		Name: "main",
-		Body: "",
-		X0: func(i int) int {
-			return 1
-		},
-		Y0: func(i int) int {
-			return 1
-		},
-		X1: func(maxX int) int {
-			return maxX - 1
-		},
-		Y1: func(maxY int) int {
-			return maxY - 1
 		},
 	}
 
@@ -64,15 +57,25 @@ item3`,
 			return 1
 		},
 		X1: func(maxX int) int {
-			return maxX - 2
+			return maxX - 1
 		},
 		Y1: func(maxY int) int {
-			return maxY - 2
+			return maxY - 1
 		},
 	}
-	cmdRunner, e := command.NewCommandRunner("docker-compose up", "/home/vmaryn/projects/go/sandbox")
 
-	g.SetManager(&mainView, &servicesView, &consoleView)
+	//cmdRunner, e := command.NewCommandRunner("docker-compose up", "/home/vmaryn/projects/go/sandbox")
+	cmdRunner, e := command.NewCommandRunner("docker exec -it 61d66566deb8 bash", "/home/vmaryn/projects/go/sandbox")
+
+	if e != nil {
+		panic(e)
+	}
+	e = cmdRunner.Start()
+
+	if e != nil {
+		panic(e)
+	}
+	g.SetManager(&servicesView, &consoleView)
 
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		cmdRunner.Stop()
@@ -80,6 +83,19 @@ item3`,
 	}); err != nil {
 		log.Panicln(err)
 	}
+
+	c := 0
+	g.SetKeybinding("", gocui.KeyCtrl2, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		views := []string{"services", "console"}
+		g.SetCurrentView(views[c%len(views)])
+
+		c++
+		return nil
+	})
+	g.SetKeybinding("console", gocui.KeyCtrlA, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		view.Autoscroll = !view.Autoscroll
+		return nil
+	})
 
 	//10
 	//150
@@ -105,24 +121,19 @@ item3`,
 	}
 
 	g.Update(func(gui *gocui.Gui) error {
-		view, e := g.SetCurrentView("console")
+		_, e := g.SetCurrentView("services")
 		if e != nil {
 			log.Panicln(e)
 		}
 
-		view.Clear()
-
+		v, _ := g.View("console")
+		v.Editor = gocui.DefaultEditor
+		v.Editable = true
+		g.SelBgColor = gocui.ColorWhite
+		g.SelFgColor = gocui.ColorBlue
+		g.Highlight = true
 		return nil
 	})
-
-	if e != nil {
-		panic(e)
-	}
-	e = cmdRunner.Start()
-
-	if e != nil {
-		panic(e)
-	}
 
 	go func() {
 		for {

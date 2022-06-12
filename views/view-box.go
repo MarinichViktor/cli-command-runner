@@ -20,21 +20,16 @@ func (w *ViewBox) Layout(g *gocui.Gui) error {
 	v.Wrap = true
 	v.Title = w.Name
 
-	if w.Name == "main" {
-		g.SetViewOnBottom("main")
-	} else {
-		v.FgColor = gocui.ColorDefault
-	}
-
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 
-		v.Clear()
-		v.FgColor = gocui.ColorDefault
-
 		fmt.Fprintln(v, w.Body)
+		lines := v.BufferLines()
+		if len(lines) > 0 {
+			v.SetCursor(len(v.BufferLines()), len(lines[len(lines)-1]))
+		}
 	}
 
 	return nil
