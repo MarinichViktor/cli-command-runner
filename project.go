@@ -3,6 +3,7 @@ package cli
 import (
 	"cli/command"
 	"strings"
+	"time"
 )
 
 const BUFF_LIMIT = 512
@@ -25,6 +26,7 @@ type Project struct {
 	Subscriptions      map[uint]*Subscription
 	lastSubscriptionId uint
 	ViewName           string
+	HasSubscription    bool
 }
 
 func NewProject(a *ProjectArgs) *Project {
@@ -66,6 +68,7 @@ func (p *Project) Start() error {
 	}
 
 	p.IsRunning = true
+	done := make(chan struct{})
 
 	go func() {
 		for {
@@ -78,6 +81,7 @@ func (p *Project) Start() error {
 					}
 
 					p.IsRunning = false
+					done <- struct{}{}
 					return
 				}
 
@@ -100,12 +104,21 @@ func (p *Project) Start() error {
 
 				}
 
-				for _, s := range p.Subscriptions {
-					s.Data(p.StrData())
-				}
 			}
 		}
 
+	}()
+	go func() {
+		t := time.NewTicker(300 * time.Millisecond)
+		select {
+		case <-t.C:
+			for _, s := range p.Subscriptions {
+				s.Data(p.StrData())
+			}
+
+		case <-done:
+			return
+		}
 	}()
 
 	return nil

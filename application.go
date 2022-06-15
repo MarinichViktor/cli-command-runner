@@ -23,32 +23,36 @@ func (app *Application) SelectProject(p *Project) error {
 		return e
 	}
 
-	p.Subscribe(func(data string) {
-		if !p.IsHighlighted {
-			return
-		}
+	if !p.HasSubscription {
+		p.HasSubscription = true
 
-		app.Update(func(gui *gocui.Gui) error {
-			view.Clear()
-			if _, e := fmt.Fprint(view, data); e != nil {
-				return e
+		p.Subscribe(func(data string) {
+			if !p.IsHighlighted {
+				return
 			}
 
-			return nil
-		})
-	}, func() {
-		app.UpdateServicesView()
-		if p.IsHighlighted {
 			app.Update(func(gui *gocui.Gui) error {
-				p.Data = append(p.Data, "Command exited....")
-				if _, e := fmt.Fprintln(view, "Command exited...."); e != nil {
+				view.Clear()
+				if _, e := fmt.Fprint(view, data); e != nil {
 					return e
 				}
 
 				return nil
 			})
-		}
-	})
+		}, func() {
+			app.UpdateServicesView()
+			if p.IsHighlighted {
+				app.Update(func(gui *gocui.Gui) error {
+					p.Data = append(p.Data, "Command exited....")
+					if _, e := fmt.Fprintln(view, "Command exited...."); e != nil {
+						return e
+					}
+
+					return nil
+				})
+			}
+		})
+	}
 
 	app.Update(func(gui *gocui.Gui) error {
 		view.Clear()

@@ -1,7 +1,7 @@
 -
   name: CATAPP
-  dir: /home/vmaryn/projects/go/cli
-  cmd: docker run --rm -p=27017:27017 mongo
+  dir: /home/vmaryn/projects/go/sandbox
+  cmd: docker-compose up
 -
   name: DOCKAPP
   dir: /home/vmaryn/projects/go/sandbox
@@ -9,4 +9,11 @@
 -
   name: DOCKAPP2
   dir: /home/vmaryn/projects/go/sandbox
+  cmd: docker-compose up
+-
+  name: CATAPP22
+  dir: /home/vmaryn/docker-course/part5-test
+  cmd: docker-compose up
+- name: DOCKAPP2123
+  dir: /home/vmaryn/docker-course/part5-test
   cmd: docker-compose up
