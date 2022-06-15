@@ -1,7 +1,7 @@
 -
   name: CATAPP
   dir: /home/vmaryn/projects/go/cli
-  cmd: cat services-view.go
+  cmd: docker run --rm -p=27017:27017 mongo
 -
   name: DOCKAPP
   dir: /home/vmaryn/projects/go/sandbox
