@@ -79,6 +79,9 @@ func main() {
 			if p.IsHighlighted && i < len(app.Projects)-1 {
 				p.IsHighlighted = false
 				app.Projects[i+1].IsHighlighted = true
+				if e := app.SelectProject(app.Projects[i+1]); e != nil {
+					log.Panicln(e)
+				}
 
 				if e := app.UpdateServicesView(); e != nil {
 					return e
@@ -97,6 +100,10 @@ func main() {
 				g.Update(func(gui *gocui.Gui) error {
 					p.IsHighlighted = false
 					app.Projects[i-1].IsHighlighted = true
+					if e := app.SelectProject(app.Projects[i-1]); e != nil {
+						log.Panicln(e)
+					}
+
 					app.UpdateServicesView()
 					return nil
 				})
@@ -112,7 +119,10 @@ func main() {
 		for _, p := range app.Projects {
 			if p.IsHighlighted {
 				if p.IsRunning {
-					p.CmdInst.Stop()
+					// todo: to be fixed
+					if e := p.CmdInst.Stop(); e != nil {
+						return e
+					}
 				} else {
 					if e := p.Start(); e != nil {
 						return e

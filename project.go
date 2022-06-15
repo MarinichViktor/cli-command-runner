@@ -17,6 +17,7 @@ func NewProject(pArgs *ProjectArgs) *Project {
 		Cmd:           pArgs.Cmd,
 		IsRunning:     false,
 		IsHighlighted: false,
+		Subscriptions: make(map[uint]*Subscription),
 	}
 }
 

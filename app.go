@@ -120,7 +120,7 @@ func (app *AppContext) SelectProject(p *Project) error {
 		}
 	})
 
-	return nil
+	return app.UpdateConsoleView(p.Data)
 }
 
 type ConsoleBuff struct {
