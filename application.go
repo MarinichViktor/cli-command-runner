@@ -11,9 +11,17 @@ type Application struct {
 }
 
 func (app *Application) SelectProject(p *Project) error {
-	maxX, maxY := app.Size()
-	view, e := app.SetView(p.Name, SERVICES_W+2, 1, maxX-1, maxY-1)
-	view.Wrap = true
+	view, e := app.View(p.Name)
+
+	if e == gocui.ErrUnknownView {
+		maxX, maxY := app.Size()
+		view, e = app.SetView(p.Name, SERVICES_W+2, 1, maxX-1, maxY-1)
+		view.Wrap = true
+
+		if e != nil && e != gocui.ErrUnknownView {
+			return e
+		}
+	}
 
 	if e != nil && e != gocui.ErrUnknownView {
 		return e
@@ -27,9 +35,9 @@ func (app *Application) SelectProject(p *Project) error {
 		p.HasSubscription = true
 
 		p.Subscribe(func(data string) {
-			if !p.IsHighlighted {
-				return
-			}
+			//if !p.IsHighlighted {
+			//	return
+			//}
 
 			app.Update(func(gui *gocui.Gui) error {
 				view.Clear()
