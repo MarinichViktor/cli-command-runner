@@ -11,17 +11,17 @@ const (
 	CONSOLE_VIEW  = "Console"
 )
 
-func SetupServicesBindings(app *AppContext, g *gocui.Gui) error {
-	e := g.SetKeybinding(SERVICES_VIEW, gocui.KeyArrowDown, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+func SetupServicesBindings(app *Application) error {
+	e := app.SetKeybinding(SERVICES_VIEW, gocui.KeyArrowDown, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		for i, p := range app.Projects {
 			if p.IsHighlighted && i < len(app.Projects)-1 {
 				p.IsHighlighted = false
 				app.Projects[i+1].IsHighlighted = true
-				if e := app.SelectProject(g, app.Projects[i+1]); e != nil {
+				if e := app.SelectProject(app.Projects[i+1]); e != nil {
 					log.Panicln(e)
 				}
 
-				if e := app.UpdateServicesView(g); e != nil {
+				if e := app.UpdateServicesView(); e != nil {
 					return e
 				}
 
@@ -36,17 +36,17 @@ func SetupServicesBindings(app *AppContext, g *gocui.Gui) error {
 		return e
 	}
 
-	e = g.SetKeybinding(SERVICES_VIEW, gocui.KeyArrowUp, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+	e = app.SetKeybinding(SERVICES_VIEW, gocui.KeyArrowUp, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		for i, p := range app.Projects {
 			if p.IsHighlighted && i != 0 {
-				g.Update(func(gui *gocui.Gui) error {
+				app.Update(func(gui *gocui.Gui) error {
 					p.IsHighlighted = false
 					app.Projects[i-1].IsHighlighted = true
-					if e := app.SelectProject(g, app.Projects[i-1]); e != nil {
+					if e := app.SelectProject(app.Projects[i-1]); e != nil {
 						log.Panicln(e)
 					}
 
-					app.UpdateServicesView(g)
+					app.UpdateServicesView()
 					return nil
 				})
 
@@ -61,7 +61,7 @@ func SetupServicesBindings(app *AppContext, g *gocui.Gui) error {
 		return e
 	}
 
-	e = g.SetKeybinding(SERVICES_VIEW, gocui.KeyCtrlR, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+	e = app.SetKeybinding(SERVICES_VIEW, gocui.KeyCtrlR, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		for _, p := range app.Projects {
 			if p.IsHighlighted {
 				if p.IsRunning {
@@ -74,7 +74,7 @@ func SetupServicesBindings(app *AppContext, g *gocui.Gui) error {
 						return e
 					}
 
-					if e := app.UpdateServicesView(g); e != nil {
+					if e := app.UpdateServicesView(); e != nil {
 						return e
 					}
 				}

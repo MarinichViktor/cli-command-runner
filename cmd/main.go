@@ -26,23 +26,16 @@ func getConfig() ([]*cli.ProjectArgs, error) {
 }
 
 func main() {
-	input, e := getConfig()
+	app, e := cli.NewApp()
+
 	if e != nil {
 		log.Panicln(e)
 	}
 
-	g, err := gocui.NewGui(gocui.Output256)
+	defer app.Close()
 
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer g.Close()
-
-	app := cli.NewAppContext(input)
-
-	g.SetManagerFunc(cli.Layout)
-
-	g.Update(func(g *gocui.Gui) error {
+	app.SetManagerFunc(cli.LayoutFactory(app))
+	app.Update(func(g *gocui.Gui) error {
 		_, e := g.SetCurrentView(cli.SERVICES_VIEW)
 
 		if e != nil {
@@ -53,22 +46,32 @@ func main() {
 		g.Highlight = true
 		g.Mouse = false
 
-		return app.SelectProject(g, app.Projects[0])
+		return app.SelectProject(app.Projects[0])
 	})
 
-	if e := app.UpdateServicesView(g); e != nil {
+	if e := app.UpdateServicesView(); e != nil {
 		log.Panicln(e)
 	}
 
-	if e := cli.SetupConsoleBindings(app, g); e != nil {
+	if e := SetupBindings(app); e != nil {
 		log.Panicln(e)
 	}
 
-	if e := cli.SetupServicesBindings(app, g); e != nil {
+	if err := app.MainLoop(); err != nil && err != gocui.ErrQuit {
+		log.Panicln(err)
+	}
+}
+
+func SetupBindings(app *cli.Application) error {
+	if e := cli.SetupConsoleBindings(app); e != nil {
 		log.Panicln(e)
 	}
 
-	e = g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+	if e := cli.SetupServicesBindings(app); e != nil {
+		log.Panicln(e)
+	}
+
+	e := app.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		for _, p := range app.Projects {
 			p.Stop()
 		}
@@ -80,18 +83,19 @@ func main() {
 	}
 
 	c := 1
-	e = g.SetKeybinding("", gocui.KeyCtrlP, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		views := []string{cli.SERVICES_VIEW, cli.CONSOLE_VIEW}
-		g.SetCurrentView(views[c%len(views)])
+	e = app.SetKeybinding("", gocui.KeyCtrlP, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		views := []string{cli.SERVICES_VIEW}
+		for _, p := range app.Projects {
+			if p.IsHighlighted {
+				views = append(views, p.Name)
+				break
+			}
+		}
+		app.SetCurrentView(views[c%len(views)])
 
 		c++
 		return nil
 	})
-	if e != nil {
-		log.Panicln(e)
-	}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
-	}
+	return e
 }

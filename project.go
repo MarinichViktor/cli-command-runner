@@ -13,22 +13,6 @@ type ProjectArgs struct {
 	Cmd  string `yaml:"cmd"`
 }
 
-func NewProject(pArgs *ProjectArgs) *Project {
-	return &Project{
-		Name:          pArgs.Name,
-		Dir:           pArgs.Dir,
-		Cmd:           pArgs.Cmd,
-		IsRunning:     false,
-		IsHighlighted: false,
-		Subscriptions: make(map[uint]*Subscription),
-	}
-}
-
-type Subscription struct {
-	Data func(string)
-	Done func()
-}
-
 type Project struct {
 	Name               string
 	Dir                string
@@ -40,6 +24,23 @@ type Project struct {
 	DataChanged        chan struct{}
 	Subscriptions      map[uint]*Subscription
 	lastSubscriptionId uint
+	ViewName           string
+}
+
+func NewProject(a *ProjectArgs) *Project {
+	return &Project{
+		Name:          a.Name,
+		Dir:           a.Dir,
+		Cmd:           a.Cmd,
+		IsRunning:     false,
+		IsHighlighted: false,
+		Subscriptions: make(map[uint]*Subscription),
+	}
+}
+
+type Subscription struct {
+	Data func(string)
+	Done func()
 }
 
 func (p *Project) Subscribe(s func(string), d func()) func() {
@@ -81,6 +82,11 @@ func (p *Project) Start() error {
 				}
 
 				newData := strings.Split(v, "\n")
+
+				for i, s := range newData {
+					newData[i] = strings.TrimSpace(s)
+				}
+
 				l := len(p.Data)
 
 				if l > 0 && p.Data[l-1] == "" {

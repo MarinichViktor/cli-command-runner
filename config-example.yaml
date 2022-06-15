@@ -6,3 +6,7 @@
   name: DOCKAPP
   dir: /home/vmaryn/projects/go/sandbox
   cmd: docker-compose up
+-
+  name: DOCKAPP2
+  dir: /home/vmaryn/projects/go/sandbox
+  cmd: docker-compose up

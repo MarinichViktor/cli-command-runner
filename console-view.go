@@ -4,49 +4,51 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
-func SetupConsoleBindings(app *AppContext, g *gocui.Gui) error {
-	e := g.SetKeybinding(CONSOLE_VIEW, gocui.KeyCtrlA, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		view.Autoscroll = !view.Autoscroll
-		return nil
-	})
+func SetupConsoleBindings(app *Application) error {
+	for _, p := range app.Projects {
+		e := app.SetKeybinding(p.Name, gocui.KeyCtrlA, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			view.Autoscroll = !view.Autoscroll
+			return nil
+		})
 
-	if e != nil {
-		return e
-	}
-
-	e = g.SetKeybinding(CONSOLE_VIEW, gocui.KeyArrowDown, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		x, y := view.Origin()
-		_, maxY := gui.Size()
-
-		if len(view.BufferLines())-y+1 > maxY {
-			return view.SetOrigin(x, y+1)
+		if e != nil {
+			return e
 		}
 
-		return nil
-	})
+		e = app.SetKeybinding(p.Name, gocui.KeyArrowDown, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			x, y := view.Origin()
+			_, maxY := gui.Size()
 
-	if e != nil {
-		return e
-	}
+			if len(view.BufferLines())-y+1 > maxY {
+				return view.SetOrigin(x, y+1)
+			}
 
-	e = g.SetKeybinding(CONSOLE_VIEW, gocui.KeyArrowUp, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		x, y := view.Origin()
+			return nil
+		})
 
-		if y > 0 {
-			return view.SetOrigin(x, y-1)
+		if e != nil {
+			return e
 		}
 
-		return nil
-	})
-	e = g.SetKeybinding(CONSOLE_VIEW, gocui.KeyCtrlB, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		x, _ := view.Origin()
+		e = app.SetKeybinding(p.Name, gocui.KeyArrowUp, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			x, y := view.Origin()
 
-		view.SetOrigin(x, 0)
+			if y > 0 {
+				return view.SetOrigin(x, y-1)
+			}
 
-		return nil
-	})
-	if e != nil {
-		return e
+			return nil
+		})
+		e = app.SetKeybinding(p.Name, gocui.KeyCtrlB, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			x, _ := view.Origin()
+
+			view.SetOrigin(x, 0)
+
+			return nil
+		})
+		if e != nil {
+			return e
+		}
 	}
 
 	return nil
