@@ -27,6 +27,8 @@ type Project struct {
 	lastSubscriptionId uint
 	ViewName           string
 	HasSubscription    bool
+	LastSynced         time.Time
+	LastUpdated        time.Time
 }
 
 func NewProject(a *ProjectArgs) *Project {
@@ -37,6 +39,8 @@ func NewProject(a *ProjectArgs) *Project {
 		IsRunning:     false,
 		IsHighlighted: false,
 		Subscriptions: make(map[uint]*Subscription),
+		LastUpdated:   time.Now(),
+		LastSynced:    time.Now(),
 	}
 }
 
@@ -101,9 +105,8 @@ func (p *Project) Start() error {
 
 				if l > BUFF_LIMIT {
 					p.Data = p.Data[l-BUFF_LIMIT : l-1]
-
 				}
-
+				p.LastUpdated = time.Now()
 				//for _, s := range p.Subscriptions {
 				//	s.Data(p.StrData())
 				//}
@@ -116,8 +119,11 @@ func (p *Project) Start() error {
 			t := time.NewTicker(150 * time.Millisecond)
 			select {
 			case <-t.C:
-				for _, s := range p.Subscriptions {
-					s.Data(p.StrData())
+				if p.LastSynced.Before(p.LastUpdated) {
+					for _, s := range p.Subscriptions {
+						s.Data(p.StrData())
+					}
+					p.LastSynced = time.Now()
 				}
 			case <-done:
 				return

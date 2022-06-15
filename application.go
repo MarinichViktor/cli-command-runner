@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
+	"time"
 )
 
 type Application struct {
@@ -35,9 +36,9 @@ func (app *Application) SelectProject(p *Project) error {
 		p.HasSubscription = true
 
 		p.Subscribe(func(data string) {
-			//if !p.IsHighlighted {
-			//	return
-			//}
+			if !p.IsHighlighted {
+				return
+			}
 
 			app.Update(func(gui *gocui.Gui) error {
 				view.Clear()
@@ -49,16 +50,17 @@ func (app *Application) SelectProject(p *Project) error {
 			})
 		}, func() {
 			app.UpdateServicesView()
-			if p.IsHighlighted {
-				app.Update(func(gui *gocui.Gui) error {
-					p.Data = append(p.Data, "Command exited....")
+			app.Update(func(gui *gocui.Gui) error {
+				p.Data = append(p.Data, "Command exited....")
+				p.LastUpdated = time.Now()
+				if p.IsHighlighted {
 					if _, e := fmt.Fprintln(view, "Command exited...."); e != nil {
 						return e
 					}
+				}
 
-					return nil
-				})
-			}
+				return nil
+			})
 		})
 	}
 

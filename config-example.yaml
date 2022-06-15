@@ -1,19 +1,4 @@
 -
-  name: CATAPP
-  dir: /home/vmaryn/projects/go/sandbox
-  cmd: docker-compose up
--
-  name: DOCKAPP
-  dir: /home/vmaryn/projects/go/sandbox
-  cmd: docker-compose up
--
-  name: DOCKAPP2
-  dir: /home/vmaryn/projects/go/sandbox
-  cmd: docker-compose up
--
-  name: CATAPP22
-  dir: /home/vmaryn/docker-course/part5-test
-  cmd: docker-compose up
-- name: DOCKAPP2123
-  dir: /home/vmaryn/docker-course/part5-test
-  cmd: docker-compose up
+  name: cmd name
+  dir: full path to dir
+  cmd: bash cmd
