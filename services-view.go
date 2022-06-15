@@ -56,7 +56,44 @@ func SetupServicesBindings(app *Application) error {
 
 		return nil
 	})
+	if e != nil {
+		return e
+	}
 
+	e = app.SetKeybinding(SERVICES_VIEW, gocui.KeyCtrlL, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		for _, p := range app.Projects {
+			if !p.IsRunning {
+				if e := p.Start(); e != nil {
+					return e
+				}
+			}
+		}
+
+		if e := app.UpdateServicesView(); e != nil {
+			return e
+		}
+
+		return nil
+	})
+	if e != nil {
+		return e
+	}
+
+	e = app.SetKeybinding(SERVICES_VIEW, gocui.KeyCtrlK, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		for _, p := range app.Projects {
+			if p.IsRunning {
+				if e := p.Stop(); e != nil {
+					return e
+				}
+			}
+		}
+
+		if e := app.UpdateServicesView(); e != nil {
+			return e
+		}
+
+		return nil
+	})
 	if e != nil {
 		return e
 	}
