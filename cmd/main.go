@@ -2,12 +2,35 @@ package main
 
 import (
 	"cli"
-	"fmt"
 	"github.com/jroimartin/gocui"
+	"gopkg.in/yaml.v3"
 	"log"
+	"os"
+	"strconv"
 )
 
+func getConfig() ([]*cli.ProjectArgs, error) {
+	l, _ := strconv.Atoi(os.Args[2])
+	args := make([]*cli.ProjectArgs, l)
+
+	data, e := os.ReadFile(os.Args[1])
+	if e != nil {
+		return nil, e
+	}
+
+	if e := yaml.Unmarshal(data, &args); e != nil {
+		return nil, e
+	}
+
+	return args, nil
+}
+
 func main() {
+	input, e := getConfig()
+	if e != nil {
+		log.Panicln(e)
+	}
+
 	g, err := gocui.NewGui(gocui.Output256)
 
 	if err != nil {
@@ -15,40 +38,21 @@ func main() {
 	}
 	defer g.Close()
 
-	projects := []*cli.Project{
-		{
-			Name:          "cmdapp",
-			Dir:           "/home/vmaryn/projects/go/cli",
-			Cmd:           "cat services-view.go",
-			IsRunning:     false,
-			IsHighlighted: true,
-		},
-		{
-			Name:      "dockerapp",
-			Dir:       "/home/vmaryn/projects/go/sandbox",
-			Cmd:       "docker-compose up",
-			IsRunning: false,
-		},
-		{
-			Name:      "dockerap2p",
-			Dir:       "/home/vmaryn/projects/go/sandbox",
-			Cmd:       "docker-compose up",
-			IsRunning: false,
-		},
-	}
-	app := &cli.AppContext{
-		Projects: projects,
-		ConBuff: &cli.ConsoleBuff{
-			Data: []string{},
-		},
-	}
+	app := cli.NewAppContext(input, g)
 
-	consoleView := cli.NewConsoleView("")
-	servicesView := cli.NewServicesView(app.Projects, `item1`)
-	app.Console = consoleView
-	app.Services = servicesView
+	g.SetManagerFunc(layout)
 
-	g.SetManager(servicesView, consoleView)
+	g.Update(func(gui *gocui.Gui) error {
+		_, e := g.SetCurrentView(cli.SERVICES_VIEW)
+		g.SelBgColor = gocui.ColorWhite
+		g.SelFgColor = gocui.ColorBlue
+		g.Highlight = true
+		return e
+	})
+
+	if e := app.UpdateServicesView(); e != nil {
+		panic(e)
+	}
 
 	if e := cli.SetupConsoleBindings(g); e != nil {
 		panic(e)
@@ -61,7 +65,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	c := 0
+	c := 1
 	g.SetKeybinding("", gocui.KeyCtrl2, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		views := []string{cli.SERVICES_VIEW, cli.CONSOLE_VIEW}
 		g.SetCurrentView(views[c%len(views)])
@@ -71,14 +75,15 @@ func main() {
 	})
 
 	g.SetKeybinding(cli.SERVICES_VIEW, gocui.KeyArrowDown, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		for i, p := range projects {
-			if p.IsHighlighted && i < len(projects)-1 {
-				g.Update(func(gui *gocui.Gui) error {
-					p.IsHighlighted = false
-					projects[i+1].IsHighlighted = true
-					servicesView.ReDraw(view)
-					return nil
-				})
+		for i, p := range app.Projects {
+			if p.IsHighlighted && i < len(app.Projects)-1 {
+				p.IsHighlighted = false
+				app.Projects[i+1].IsHighlighted = true
+
+				if e := app.UpdateServicesView(); e != nil {
+					return e
+				}
+
 				break
 			}
 		}
@@ -87,12 +92,12 @@ func main() {
 	})
 
 	g.SetKeybinding(cli.SERVICES_VIEW, gocui.KeyArrowUp, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		for i, p := range projects {
+		for i, p := range app.Projects {
 			if p.IsHighlighted && i != 0 {
 				g.Update(func(gui *gocui.Gui) error {
 					p.IsHighlighted = false
-					projects[i-1].IsHighlighted = true
-					servicesView.ReDraw(view)
+					app.Projects[i-1].IsHighlighted = true
+					app.UpdateServicesView()
 					return nil
 				})
 
@@ -102,49 +107,20 @@ func main() {
 
 		return nil
 	})
+
 	g.SetKeybinding(cli.SERVICES_VIEW, gocui.KeyCtrlR, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		for _, p := range projects {
+		for _, p := range app.Projects {
 			if p.IsHighlighted {
 				if p.IsRunning {
 					p.CmdInst.Stop()
 				} else {
-					e := p.Start()
-					if e != nil {
-						log.Panicln(e)
+					if e := p.Start(); e != nil {
+						return e
 					}
-					g.Update(func(gui *gocui.Gui) error {
-						servicesView.ReDraw(view)
 
-						return nil
-					})
-					go func() {
-						v, _ := g.View(cli.CONSOLE_VIEW)
-
-						g.Update(func(gui *gocui.Gui) error {
-							v.Clear()
-							fmt.Fprintf(v, p.Data)
-							return nil
-						})
-
-						for {
-							_, ok := <-p.DataChanged
-
-							if !ok {
-								g.Update(func(gui *gocui.Gui) error {
-									servicesView.ReDraw(view)
-
-									return nil
-								})
-								return
-							}
-							g.Update(func(gui *gocui.Gui) error {
-								v.Clear()
-								fmt.Fprintf(v, p.Data)
-								return nil
-							})
-						}
-
-					}()
+					if e := app.UpdateServicesView(); e != nil {
+						return e
+					}
 				}
 
 				break
@@ -153,105 +129,48 @@ func main() {
 		return nil
 	})
 
-	g.Update(func(gui *gocui.Gui) error {
-		_, e := g.SetCurrentView(cli.SERVICES_VIEW)
-		if e != nil {
-			log.Panicln(e)
-		}
-
-		v, _ := g.View(cli.CONSOLE_VIEW)
-		v.Editor = gocui.DefaultEditor
-		v.Editable = true
-		g.SelBgColor = gocui.ColorWhite
-		g.SelFgColor = gocui.ColorBlue
-		g.Highlight = true
-		return nil
-	})
-
-	//go func() {
-	//	for {
-	//		select {
-	//		case v, ok := <-cmdRunner.OutStream:
-	//			if !ok {
-	//				cmdRunner.Stop()
-	//				return
-	//			}
-	//			consoleView.Body = consoleView.Body + v
-	//
-	//			g.Update(func(gui *gocui.Gui) error {
-	//				view, _ := g.View("console")
-	//				view.Clear()
-	//				fmt.Fprintf(view, consoleView.Body)
-	//				return nil
-	//			})
-	//		}
+	//g.Update(func(gui *gocui.Gui) error {
+	//	_, e := g.SetCurrentView(cli.SERVICES_VIEW)
+	//	if e != nil {
+	//		log.Panicln(e)
 	//	}
 	//
-	//}()
-	//go func() {
-	//	for {
-	//		select {
-	//		case v, ok := <-cmdRunner.ErrStream:
-	//			if !ok {
-	//				cmdRunner.Stop()
-	//				return
-	//			}
-	//			consoleView.Body = consoleView.Body + v
-	//
-	//			g.Update(func(gui *gocui.Gui) error {
-	//				view, _ := g.View("console")
-	//				view.Clear()
-	//				fmt.Fprintf(view, consoleView.Body)
-	//				return nil
-	//			})
-	//		}
-	//	}
-	//
-	//}()
+	//	v, _ := g.View(cli.CONSOLE_VIEW)
+	//	v.Editor = gocui.DefaultEditor
+	//	v.Editable = true
+	//	g.SelBgColor = gocui.ColorWhite
+	//	g.SelFgColor = gocui.ColorBlue
+	//	g.Highlight = true
+	//	return nil
+	//})
+
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
 }
 
-//
-//func StartProject(app *cli.AppContext, g *gocui.Gui, project *cli.Project) {
-//	active := app.Active
-//
-//	if active != nil {
-//		active.IsRunning = false
-//		active.CmdInst.Stop()
-//	}
-//
-//	cmd, _ := command.NewCommandRunner(project.Cmd, project.Dir)
-//	project.CmdInst = *cmd
-//	project.CmdInst.Start()
-//	project.IsRunning = true
-//	app.Active = project
-//
-//	go func() {
-//		for {
-//			select {
-//			case v, ok := <-project.CmdInst.OutStream:
-//				if !ok {
-//					return
-//				}
-//				app.Console.Body = app.Console.Body + v
-//
-//				g.Update(func(gui *gocui.Gui) error {
-//					view, _ := g.View(cli.CONSOLE_VIEW)
-//					view.Clear()
-//					fmt.Fprintf(view, app.Console.Body)
-//					return nil
-//				})
-//			case <-project.CmdInst.Done:
-//				return
-//			}
-//		}
-//
-//	}()
-//}
-
 func layout(g *gocui.Gui) error {
+	maxX, maxY := g.Size()
+	sView, err := g.SetView(cli.CONSOLE_VIEW, cli.SERVICES_W+2, 1, maxX-1, maxY-1)
+
+	if err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		sView.Title = "Console"
+	}
+
+	cView, err := g.SetView(cli.SERVICES_VIEW, 1, 1, cli.SERVICES_W+1, maxY-1)
+	cView.Wrap = true
+
+	if err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		cView.Title = "Services"
+	}
 
 	return nil
 }
