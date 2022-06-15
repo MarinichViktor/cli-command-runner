@@ -1,0 +1,8 @@
+-
+  name: CATAPP
+  dir: /home/vmaryn/projects/go/cli
+  cmd: cat services-view.go
+-
+  name: DOCKAPP
+  dir: /home/vmaryn/projects/go/sandbox
+  cmd: docker-compose up

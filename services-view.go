@@ -33,7 +33,6 @@ func (w *ServicesView) ReDraw(v *gocui.View) {
 			fmt.Fprintln(v, name)
 		}
 	}
-
 }
 
 func (w *ServicesView) Layout(g *gocui.Gui) error {

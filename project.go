@@ -4,15 +4,50 @@ import (
 	"cli/command"
 )
 
+type ProjectArgs struct {
+	Name string `yaml:"name"`
+	Dir  string `yaml:"dir"`
+	Cmd  string `yaml:"cmd"`
+}
+
+func NewProject(pArgs *ProjectArgs) *Project {
+	return &Project{
+		Name:          pArgs.Name,
+		Dir:           pArgs.Dir,
+		Cmd:           pArgs.Cmd,
+		IsRunning:     false,
+		IsHighlighted: false,
+	}
+}
+
+type Subscription struct {
+	Data func(string)
+	Done func()
+}
+
 type Project struct {
-	Name          string
-	Dir           string
-	Cmd           string
-	IsRunning     bool
-	IsHighlighted bool
-	CmdInst       command.CommandRunner
-	Data          string
-	DataChanged   chan struct{}
+	Name               string
+	Dir                string
+	Cmd                string
+	IsRunning          bool
+	IsHighlighted      bool
+	CmdInst            command.CommandRunner
+	Data               string
+	DataChanged        chan struct{}
+	Subscriptions      map[uint]*Subscription
+	lastSubscriptionId uint
+}
+
+func (p *Project) Subscribe(s func(string), d func()) func() {
+	p.lastSubscriptionId++
+	p.Subscriptions[p.lastSubscriptionId] = &Subscription{
+		Data: s,
+		Done: d,
+	}
+
+	return func() {
+		delete(p.Subscriptions, p.lastSubscriptionId)
+	}
 }
 
 func (p *Project) Start() error {
@@ -36,9 +71,14 @@ func (p *Project) Start() error {
 				}
 
 				p.Data += v
-				p.DataChanged <- struct{}{}
+				for _, s := range p.Subscriptions {
+					s.Data(p.Data)
+				}
 			case <-p.CmdInst.Done:
 				p.IsRunning = false
+				for _, s := range p.Subscriptions {
+					s.Done()
+				}
 				return
 			}
 		}
