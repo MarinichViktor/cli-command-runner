@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/jroimartin/gocui"
+	"log"
 )
 
 const (
@@ -11,53 +11,79 @@ const (
 	CONSOLE_VIEW  = "Console"
 )
 
-type ServicesView struct {
-	Name     string
-	Body     string
-	Projects []*Project
-}
+func SetupServicesBindings(app *AppContext, g *gocui.Gui) error {
+	e := g.SetKeybinding(SERVICES_VIEW, gocui.KeyArrowDown, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		for i, p := range app.Projects {
+			if p.IsHighlighted && i < len(app.Projects)-1 {
+				p.IsHighlighted = false
+				app.Projects[i+1].IsHighlighted = true
+				if e := app.SelectProject(g, app.Projects[i+1]); e != nil {
+					log.Panicln(e)
+				}
 
-func (w *ServicesView) ReDraw(v *gocui.View) {
-	v.Clear()
+				if e := app.UpdateServicesView(g); e != nil {
+					return e
+				}
 
-	for _, p := range w.Projects {
-		name := p.Name
-
-		if p.IsHighlighted {
-			name = fmt.Sprintf("\u001b[44m%s\033[m", name)
+				break
+			}
 		}
 
-		if p.IsRunning {
-			fmt.Fprintln(v, name+" (Running)")
-		} else {
-			fmt.Fprintln(v, name)
+		return nil
+	})
+
+	if e != nil {
+		return e
+	}
+
+	e = g.SetKeybinding(SERVICES_VIEW, gocui.KeyArrowUp, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		for i, p := range app.Projects {
+			if p.IsHighlighted && i != 0 {
+				g.Update(func(gui *gocui.Gui) error {
+					p.IsHighlighted = false
+					app.Projects[i-1].IsHighlighted = true
+					if e := app.SelectProject(g, app.Projects[i-1]); e != nil {
+						log.Panicln(e)
+					}
+
+					app.UpdateServicesView(g)
+					return nil
+				})
+
+				break
+			}
 		}
+
+		return nil
+	})
+
+	if e != nil {
+		return e
 	}
-}
 
-func (w *ServicesView) Layout(g *gocui.Gui) error {
-	_, maxY := g.Size()
-	v, err := g.SetView(w.Name, 1, 1, SERVICES_W+1, maxY-1)
-	v.Wrap = true
-	v.Title = w.Name
+	e = g.SetKeybinding(SERVICES_VIEW, gocui.KeyCtrlR, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		for _, p := range app.Projects {
+			if p.IsHighlighted {
+				if p.IsRunning {
+					// todo: to be fixed
+					if e := p.Stop(); e != nil {
+						return e
+					}
+				} else {
+					if e := p.Start(); e != nil {
+						return e
+					}
 
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
+					if e := app.UpdateServicesView(g); e != nil {
+						return e
+					}
+				}
+
+				break
+			}
 		}
+		return nil
+	})
 
-		w.ReDraw(v)
-	}
-
-	return nil
-}
-
-func NewServicesView(projects []*Project, body string) *ServicesView {
-	view := ServicesView{
-		Name:     SERVICES_VIEW,
-		Body:     body,
-		Projects: projects,
-	}
-
-	return &view
+	return e
 }

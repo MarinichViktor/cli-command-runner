@@ -53,7 +53,7 @@ func (c *CommandRunner) Start() error {
 
 	go func() {
 		c.Cmd.Wait()
-		close(c.Done)
+		c.Done <- struct{}{}
 	}()
 
 	go func() {
@@ -85,13 +85,12 @@ func (c *CommandRunner) Start() error {
 			read, e = c.stdErr.Read(b)
 			if e != nil {
 				if e == io.EOF {
-					close(c.ErrStream)
 					return
 				}
 
 				panic(e)
 			} else {
-				c.ErrStream <- string(b[:read])
+				c.OutStream <- string(b[:read])
 			}
 		}
 	}()

@@ -54,6 +54,7 @@ func (p *Project) Subscribe(s func(string), d func()) func() {
 func (p *Project) Start() error {
 	cmd, _ := command.NewCommandRunner(p.Cmd, p.Dir)
 	p.CmdInst = *cmd
+	p.Data = ""
 	p.DataChanged = make(chan struct{})
 
 	if e := p.CmdInst.Start(); e != nil {
@@ -65,8 +66,13 @@ func (p *Project) Start() error {
 	go func() {
 		for {
 			select {
+			// todo remove select
 			case v, ok := <-p.CmdInst.OutStream:
 				if !ok {
+					for _, s := range p.Subscriptions {
+						s.Done()
+					}
+
 					p.IsRunning = false
 					return
 				}
@@ -75,16 +81,18 @@ func (p *Project) Start() error {
 				for _, s := range p.Subscriptions {
 					s.Data(p.Data)
 				}
-			case <-p.CmdInst.Done:
-				p.IsRunning = false
-				for _, s := range p.Subscriptions {
-					s.Done()
-				}
-				return
 			}
 		}
 
 	}()
+
+	return nil
+}
+
+func (p *Project) Stop() error {
+	if e := p.CmdInst.Stop(); e != nil {
+		return e
+	}
 
 	return nil
 }

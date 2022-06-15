@@ -5,20 +5,12 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
-const APP_KEY = "app"
-
 type AppContext struct {
-	g            *gocui.Gui
-	Active       *Project
 	Projects     []*Project
-	Services     *ServicesView
-	Console      *ConsoleView
-	ConBuff      *ConsoleBuff
-	done         chan struct{}
 	unsubscriber func()
 }
 
-func NewAppContext(projArgs []*ProjectArgs, g *gocui.Gui) *AppContext {
+func NewAppContext(projArgs []*ProjectArgs) *AppContext {
 	projects := make([]*Project, 0)
 
 	for i, a := range projArgs {
@@ -33,12 +25,11 @@ func NewAppContext(projArgs []*ProjectArgs, g *gocui.Gui) *AppContext {
 
 	return &AppContext{
 		Projects: projects,
-		g:        g,
 	}
 }
 
-func (app *AppContext) ServicesView() (*gocui.View, error) {
-	v, e := app.g.View(SERVICES_VIEW)
+func (app *AppContext) ServicesView(g *gocui.Gui) (*gocui.View, error) {
+	v, e := g.View(SERVICES_VIEW)
 	if e != nil && e != gocui.ErrUnknownView {
 		return nil, e
 	}
@@ -46,8 +37,8 @@ func (app *AppContext) ServicesView() (*gocui.View, error) {
 	return v, nil
 }
 
-func (app *AppContext) ConsoleView() (*gocui.View, error) {
-	v, e := app.g.View(CONSOLE_VIEW)
+func (app *AppContext) ConsoleView(g *gocui.Gui) (*gocui.View, error) {
+	v, e := g.View(CONSOLE_VIEW)
 	if e != nil && e != gocui.ErrUnknownView {
 		return nil, e
 	}
@@ -55,9 +46,9 @@ func (app *AppContext) ConsoleView() (*gocui.View, error) {
 	return v, nil
 }
 
-func (app *AppContext) UpdateServicesView() error {
-	app.g.Update(func(gui *gocui.Gui) error {
-		view, e := app.ServicesView()
+func (app *AppContext) UpdateServicesView(g *gocui.Gui) error {
+	g.Update(func(gui *gocui.Gui) error {
+		view, e := app.ServicesView(g)
 
 		if e != nil {
 			return e
@@ -89,9 +80,9 @@ func (app *AppContext) UpdateServicesView() error {
 	return nil
 }
 
-func (app *AppContext) UpdateConsoleView(data string) error {
-	app.g.Update(func(gui *gocui.Gui) error {
-		view, e := app.ConsoleView()
+func (app *AppContext) UpdateConsoleView(g *gocui.Gui, data string) error {
+	g.Update(func(gui *gocui.Gui) error {
+		view, e := app.ConsoleView(g)
 		if e != nil {
 			return e
 		}
@@ -104,26 +95,21 @@ func (app *AppContext) UpdateConsoleView(data string) error {
 	return nil
 }
 
-func (app *AppContext) SelectProject(p *Project) error {
+func (app *AppContext) SelectProject(g *gocui.Gui, p *Project) error {
 	if app.unsubscriber != nil {
 		app.unsubscriber()
 	}
 
 	app.unsubscriber = p.Subscribe(func(data string) {
-		if e := app.UpdateConsoleView(p.Data); e != nil {
+		if e := app.UpdateConsoleView(g, p.Data); e != nil {
 			return
 		}
 	}, func() {
-		app.unsubscriber()
-		if e := app.UpdateServicesView(); e != nil {
+		if e := app.UpdateServicesView(g); e != nil {
 			return
 		}
+		app.unsubscriber()
 	})
 
-	return app.UpdateConsoleView(p.Data)
-}
-
-type ConsoleBuff struct {
-	Project *Project
-	Data    []string
+	return app.UpdateConsoleView(g, p.Data)
 }
