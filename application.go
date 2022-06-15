@@ -13,6 +13,7 @@ type Application struct {
 func (app *Application) SelectProject(p *Project) error {
 	maxX, maxY := app.Size()
 	view, e := app.SetView(p.Name, SERVICES_W+2, 1, maxX-1, maxY-1)
+	view.Wrap = true
 
 	if e != nil && e != gocui.ErrUnknownView {
 		return e

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const BUFF_LIMIT = 1000
+const BUFF_LIMIT = 512
 
 type ProjectArgs struct {
 	Name string `yaml:"name"`
@@ -84,16 +84,16 @@ func (p *Project) Start() error {
 				newData := strings.Split(v, "\n")
 
 				for i, s := range newData {
-					newData[i] = strings.TrimSpace(s)
+					newData[i] = strings.Trim(strings.TrimSpace(s), "\x00")
 				}
 
 				l := len(p.Data)
 
-				if l > 0 && p.Data[l-1] == "" {
-					p.Data = p.Data[:l-2]
+				if l > 0 {
+					p.Data[l-1] += newData[0]
 				}
 
-				p.Data = append(p.Data, newData...)
+				p.Data = append(p.Data, newData[1:]...)
 
 				if l > BUFF_LIMIT {
 					p.Data = p.Data[l-BUFF_LIMIT : l-1]
