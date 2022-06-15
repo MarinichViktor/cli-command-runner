@@ -105,7 +105,10 @@ func (app *AppContext) SelectProject(g *gocui.Gui, p *Project) error {
 	}
 
 	x, _ := view.Origin()
-	view.SetOrigin(x, 1)
+	e = view.SetOrigin(x, 0)
+	if e != nil {
+		return e
+	}
 
 	app.unsubscriber = p.Subscribe(func(data string) {
 		if e := app.UpdateConsoleView(g, p.StrData()); e != nil {

@@ -38,7 +38,13 @@ func SetupConsoleBindings(app *AppContext, g *gocui.Gui) error {
 
 		return nil
 	})
+	e = g.SetKeybinding(CONSOLE_VIEW, gocui.KeyCtrlB, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		x, _ := view.Origin()
 
+		view.SetOrigin(x, 0)
+
+		return nil
+	})
 	if e != nil {
 		return e
 	}

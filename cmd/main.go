@@ -80,13 +80,16 @@ func main() {
 	}
 
 	c := 1
-	g.SetKeybinding("", gocui.KeyCtrl2, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+	e = g.SetKeybinding("", gocui.KeyCtrlP, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		views := []string{cli.SERVICES_VIEW, cli.CONSOLE_VIEW}
 		g.SetCurrentView(views[c%len(views)])
 
 		c++
 		return nil
 	})
+	if e != nil {
+		log.Panicln(e)
+	}
 
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
