@@ -88,7 +88,7 @@ func (p *Project) Start() error {
 				newData := strings.Split(v, "\n")
 
 				for i, s := range newData {
-					newData[i] = strings.Trim(strings.TrimSpace(s), "\x00")
+					newData[i] = strings.Trim(s, "\x00")
 				}
 
 				l := len(p.Data)

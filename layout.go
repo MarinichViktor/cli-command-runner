@@ -44,6 +44,7 @@ func LayoutFactory(app *Application) func(g *gocui.Gui) error {
 				}
 
 				view.Autoscroll = true
+				view.Wrap = true
 				view.Title = fmt.Sprintf("Console - %s", p.Name)
 			}
 		}
