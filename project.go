@@ -2,7 +2,10 @@ package cli
 
 import (
 	"cli/command"
+	"strings"
 )
+
+const BUFF_LIMIT = 1000
 
 type ProjectArgs struct {
 	Name string `yaml:"name"`
@@ -33,7 +36,7 @@ type Project struct {
 	IsRunning          bool
 	IsHighlighted      bool
 	CmdInst            command.CommandRunner
-	Data               string
+	Data               []string
 	DataChanged        chan struct{}
 	Subscriptions      map[uint]*Subscription
 	lastSubscriptionId uint
@@ -54,7 +57,7 @@ func (p *Project) Subscribe(s func(string), d func()) func() {
 func (p *Project) Start() error {
 	cmd, _ := command.NewCommandRunner(p.Cmd, p.Dir)
 	p.CmdInst = *cmd
-	p.Data = ""
+	p.Data = []string{}
 	p.DataChanged = make(chan struct{})
 
 	if e := p.CmdInst.Start(); e != nil {
@@ -77,9 +80,22 @@ func (p *Project) Start() error {
 					return
 				}
 
-				p.Data += v
+				newData := strings.Split(v, "\n")
+				l := len(p.Data)
+
+				if l > 0 && p.Data[l-1] == "" {
+					p.Data = p.Data[:l-2]
+				}
+
+				p.Data = append(p.Data, newData...)
+
+				if l > BUFF_LIMIT {
+					p.Data = p.Data[l-BUFF_LIMIT : l-1]
+
+				}
+
 				for _, s := range p.Subscriptions {
-					s.Data(p.Data)
+					s.Data(p.StrData())
 				}
 			}
 		}
@@ -87,6 +103,9 @@ func (p *Project) Start() error {
 	}()
 
 	return nil
+}
+func (p *Project) StrData() string {
+	return strings.Join(p.Data, "\n")
 }
 
 func (p *Project) Stop() error {

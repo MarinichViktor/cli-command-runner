@@ -99,9 +99,16 @@ func (app *AppContext) SelectProject(g *gocui.Gui, p *Project) error {
 	if app.unsubscriber != nil {
 		app.unsubscriber()
 	}
+	view, e := app.ConsoleView(g)
+	if e != nil {
+		return e
+	}
+
+	x, _ := view.Origin()
+	view.SetOrigin(x, 1)
 
 	app.unsubscriber = p.Subscribe(func(data string) {
-		if e := app.UpdateConsoleView(g, p.Data); e != nil {
+		if e := app.UpdateConsoleView(g, p.StrData()); e != nil {
 			return
 		}
 	}, func() {
@@ -111,5 +118,5 @@ func (app *AppContext) SelectProject(g *gocui.Gui, p *Project) error {
 		app.unsubscriber()
 	})
 
-	return app.UpdateConsoleView(g, p.Data)
+	return app.UpdateConsoleView(g, p.StrData())
 }

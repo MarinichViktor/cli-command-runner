@@ -42,7 +42,7 @@ func main() {
 
 	g.SetManagerFunc(cli.Layout)
 
-	g.Update(func(gui *gocui.Gui) error {
+	g.Update(func(g *gocui.Gui) error {
 		_, e := g.SetCurrentView(cli.SERVICES_VIEW)
 
 		if e != nil {
