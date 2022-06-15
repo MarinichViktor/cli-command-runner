@@ -104,20 +104,24 @@ func (p *Project) Start() error {
 
 				}
 
+				//for _, s := range p.Subscriptions {
+				//	s.Data(p.StrData())
+				//}
 			}
 		}
 
 	}()
 	go func() {
-		t := time.NewTicker(300 * time.Millisecond)
-		select {
-		case <-t.C:
-			for _, s := range p.Subscriptions {
-				s.Data(p.StrData())
+		for {
+			t := time.NewTicker(150 * time.Millisecond)
+			select {
+			case <-t.C:
+				for _, s := range p.Subscriptions {
+					s.Data(p.StrData())
+				}
+			case <-done:
+				return
 			}
-
-		case <-done:
-			return
 		}
 	}()
 
