@@ -1,4 +1,9 @@
 -
   name: cmd name
-  dir: full path to dir
-  cmd: bash cmd
+  dir: /home/vmaryn/projects/go/sandbox
+  cmd: docker-compose up
+-
+  name: rails app
+  dir: /home/vmaryn/projects/go/sandbox
+  cmd:  docker run --rm -v /home/vmaryn/projects/ruby/sport-news:/app --add-host=host.docker.internal:host-gateway -v "/app/node_modules" -p="4100:3000" --name news snews
+

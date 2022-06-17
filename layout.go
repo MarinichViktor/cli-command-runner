@@ -33,6 +33,7 @@ func Layout(g *gocui.Gui) error {
 }
 
 func LayoutFactory(app *Application) func(g *gocui.Gui) error {
+	i := 0
 	return func(g *gocui.Gui) error {
 		maxX, maxY := app.Size()
 		for _, p := range app.Projects {
@@ -44,21 +45,22 @@ func LayoutFactory(app *Application) func(g *gocui.Gui) error {
 				}
 
 				view.Autoscroll = true
-				view.Wrap = true
-				view.Title = fmt.Sprintf("Console - %s", p.Name)
+				//view.Wrap = true
+				view.Title = fmt.Sprintf("Console - %s - %d", p.Name, i)
 			}
 		}
 
 		cView, err := g.SetView(SERVICES_VIEW, 1, 1, SERVICES_W+1, maxY-1)
 		cView.Wrap = true
+		i++
 
 		if err != nil {
 			if err != gocui.ErrUnknownView {
 				return err
 			}
 
-			cView.Title = "Services"
 		}
+		cView.Title = fmt.Sprintf("Services - %d", i)
 
 		return nil
 	}
