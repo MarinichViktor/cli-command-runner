@@ -84,13 +84,7 @@ func SetupBindings(app *cli.Application) error {
 
 	c := 1
 	e = app.SetKeybinding("", gocui.KeyCtrlP, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		views := []string{cli.SERVICES_VIEW}
-		for _, p := range app.Projects {
-			if p.IsHighlighted {
-				views = append(views, p.Name)
-				break
-			}
-		}
+		views := []string{cli.SERVICES_VIEW, cli.CONSOLE_VIEW}
 		app.SetCurrentView(views[c%len(views)])
 
 		c++

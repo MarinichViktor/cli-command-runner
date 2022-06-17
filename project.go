@@ -29,6 +29,7 @@ type Project struct {
 	HasSubscription    bool
 	LastSynced         time.Time
 	LastUpdated        time.Time
+	View               *VirtualView
 }
 
 func NewProject(a *ProjectArgs) *Project {
@@ -41,6 +42,10 @@ func NewProject(a *ProjectArgs) *Project {
 		Subscriptions: make(map[uint]*Subscription),
 		LastUpdated:   time.Now(),
 		LastSynced:    time.Now(),
+		View: &VirtualView{
+			Offset: 0,
+			Data:   []string{},
+		},
 	}
 }
 
@@ -64,8 +69,12 @@ func (p *Project) Subscribe(s func(string), d func()) func() {
 func (p *Project) Start() error {
 	cmd, _ := command.NewCommandRunner(p.Cmd, p.Dir)
 	p.CmdInst = *cmd
-	p.Data = []string{}
+	//p.Data = []string{}
 	p.DataChanged = make(chan struct{})
+	p.View = &VirtualView{
+		Offset: 0,
+		Data:   []string{},
+	}
 
 	if e := p.CmdInst.Start(); e != nil {
 		return e
@@ -91,21 +100,23 @@ func (p *Project) Start() error {
 
 				newData := strings.Split(v, "\n")
 
-				for i, s := range newData {
-					newData[i] = strings.Trim(s, "\x00")
-				}
+				//for i, s := range newData {
+				//	newData[i] = strings.Trim(s, "\x00")
+				//}
 
-				l := len(p.Data)
+				l := len(p.View.Data)
 
 				if l > 0 {
-					p.Data[l-1] += newData[0]
+					p.View.Data[l-1] += newData[0]
+					p.View.AppendData(newData[1:])
+				} else {
+					p.View.AppendData(newData)
 				}
+				//p.Data = append(p.Data, newData[1:]...)
 
-				p.Data = append(p.Data, newData[1:]...)
-
-				if l > BUFF_LIMIT {
-					p.Data = p.Data[l-BUFF_LIMIT : l-1]
-				}
+				//if l > BUFF_LIMIT {
+				//	p.Data = p.Data[l-BUFF_LIMIT : l-1]
+				//}
 				p.LastUpdated = time.Now()
 				//for _, s := range p.Subscriptions {
 				//	s.Data(p.StrData())
@@ -133,6 +144,7 @@ func (p *Project) Start() error {
 
 	return nil
 }
+
 func (p *Project) StrData() string {
 	return strings.Join(p.Data, "\n")
 }
