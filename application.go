@@ -8,15 +8,17 @@ import (
 
 type Application struct {
 	*gocui.Gui
-	Projects []*Project
+	ActiveProject *Project
+	Projects      []*Project
 }
 
 func (app *Application) SelectProject(p *Project) error {
-	view, e := app.View(p.Name)
+	view, e := app.View(CONSOLE_VIEW)
+	app.ActiveProject = p
 
 	if e == gocui.ErrUnknownView {
 		maxX, maxY := app.Size()
-		view, e = app.SetView(p.Name, SERVICES_W+2, 1, maxX-1, maxY-1)
+		view, e = app.SetView(CONSOLE_VIEW, SERVICES_W+2, 1, maxX-1, maxY-1)
 		view.Wrap = true
 
 		if e != nil && e != gocui.ErrUnknownView {
@@ -25,10 +27,6 @@ func (app *Application) SelectProject(p *Project) error {
 	}
 
 	if e != nil && e != gocui.ErrUnknownView {
-		return e
-	}
-
-	if _, e := app.SetViewOnTop(p.Name); e != nil {
 		return e
 	}
 
@@ -41,15 +39,13 @@ func (app *Application) SelectProject(p *Project) error {
 			}
 
 			app.Update(func(gui *gocui.Gui) error {
-				view.Clear()
-				if _, e := fmt.Fprint(view, data); e != nil {
-					return e
-				}
-
 				return nil
 			})
 		}, func() {
-			app.UpdateServicesView()
+			if e := app.UpdateServicesView(); e != nil {
+				return
+			}
+
 			app.Update(func(gui *gocui.Gui) error {
 				p.Data = append(p.Data, "Command exited....")
 				p.LastUpdated = time.Now()

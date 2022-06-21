@@ -3,12 +3,10 @@ package cli
 import (
 	"gopkg.in/yaml.v3"
 	"os"
-	"strconv"
 )
 
 func ParseProjectArgs() ([]*ProjectArgs, error) {
-	l, _ := strconv.Atoi(os.Args[2])
-	args := make([]*ProjectArgs, l)
+	var args []*ProjectArgs
 
 	data, e := os.ReadFile(os.Args[1])
 	if e != nil {

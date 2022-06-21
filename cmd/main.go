@@ -3,27 +3,8 @@ package main
 import (
 	"cli"
 	"github.com/jroimartin/gocui"
-	"gopkg.in/yaml.v3"
 	"log"
-	"os"
-	"strconv"
 )
-
-func getConfig() ([]*cli.ProjectArgs, error) {
-	l, _ := strconv.Atoi(os.Args[2])
-	args := make([]*cli.ProjectArgs, l)
-
-	data, e := os.ReadFile(os.Args[1])
-	if e != nil {
-		return nil, e
-	}
-
-	if e := yaml.Unmarshal(data, &args); e != nil {
-		return nil, e
-	}
-
-	return args, nil
-}
 
 func main() {
 	app, e := cli.NewApp()
@@ -82,18 +63,13 @@ func SetupBindings(app *cli.Application) error {
 		log.Panicln(e)
 	}
 
-	c := 1
+	// todo: replace this ugly solution
+	windowIdx := 1
 	e = app.SetKeybinding("", gocui.KeyCtrlP, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		views := []string{cli.SERVICES_VIEW}
-		for _, p := range app.Projects {
-			if p.IsHighlighted {
-				views = append(views, p.Name)
-				break
-			}
-		}
-		app.SetCurrentView(views[c%len(views)])
+		views := []string{cli.SERVICES_VIEW, cli.CONSOLE_VIEW}
+		app.SetCurrentView(views[windowIdx%len(views)])
 
-		c++
+		windowIdx++
 		return nil
 	})
 

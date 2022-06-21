@@ -31,8 +31,8 @@ func NewCommandRunner(bashCmd string, dir string) (*CommandRunner, error) {
 
 	runner = &CommandRunner{
 		Cmd:       cmd,
-		OutStream: make(chan string, 16),
-		ErrStream: make(chan string, 16),
+		OutStream: make(chan string),
+		ErrStream: make(chan string),
 		stdOut:    stdOut,
 		stdErr:    stdErr,
 		Done:      make(chan struct{}),
@@ -57,7 +57,7 @@ func (c *CommandRunner) Start() error {
 	}()
 
 	go func() {
-		b := make([]byte, 256)
+		b := make([]byte, 1)
 		read := 0
 		var e error
 
@@ -77,7 +77,7 @@ func (c *CommandRunner) Start() error {
 	}()
 
 	go func() {
-		b := make([]byte, 64)
+		b := make([]byte, 1)
 		read := 0
 		var e error
 
