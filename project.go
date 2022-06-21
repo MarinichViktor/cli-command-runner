@@ -69,7 +69,7 @@ func (p *Project) Subscribe(s func(string), d func()) func() {
 func (p *Project) Start() error {
 	cmd, _ := command.NewCommandRunner(p.Cmd, p.Dir)
 	p.CmdInst = *cmd
-	//p.Data = []string{}
+
 	p.DataChanged = make(chan struct{})
 	p.View = &VirtualView{
 		Offset: 0,

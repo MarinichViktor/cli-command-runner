@@ -63,6 +63,33 @@ func SetupConsoleBindings(app *Application) error {
 		//return nil
 	})
 
+	if e != nil {
+		return e
+	}
+
+	e = app.SetKeybinding(CONSOLE_VIEW, gocui.KeyArrowLeft, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		x, y := view.Origin()
+
+		if x > 0 {
+			return view.SetOrigin(x-1, y)
+		}
+
+		return nil
+	})
+
+	if e != nil {
+		return e
+	}
+
+	e = app.SetKeybinding(CONSOLE_VIEW, gocui.KeyArrowRight, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+		x, y := view.Origin()
+		return view.SetOrigin(x+1, y)
+	})
+
+	if e != nil {
+		return e
+	}
+
 	e = app.SetKeybinding(CONSOLE_VIEW, gocui.KeyPgdn, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		return app.ActiveProject.View.ScrollPageDown(view)
 	})
