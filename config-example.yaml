@@ -1,9 +1,10 @@
+# List commands you want to run
 -
   name: cmd name
-  dir: /home/vmaryn/projects/go/sandbox
-  cmd: docker-compose up
+  dir: absolute path to command folder
+  cmd: command
+#  .....
 -
-  name: rails app
-  dir: /home/vmaryn/projects/go/sandbox
-  cmd:  docker run --rm -v /home/vmaryn/projects/ruby/sport-news:/app --add-host=host.docker.internal:host-gateway -v "/app/node_modules" -p="4100:3000" --name news snews
-
+  name: cmd name
+  dir: absolute path to command folder
+  cmd: command
