@@ -30,10 +30,6 @@ func (app *Application) SelectProject(p *Project) error {
 		return e
 	}
 
-	//if _, e := app.SetViewOnTop(p.Name); e != nil {
-	//	return e
-	//}
-
 	if !p.HasSubscription {
 		p.HasSubscription = true
 
@@ -43,16 +39,13 @@ func (app *Application) SelectProject(p *Project) error {
 			}
 
 			app.Update(func(gui *gocui.Gui) error {
-				//app.ActiveProject.View.Draw(view)
-				//view.Clear()
-				//if _, e := fmt.Fprint(view, Data); e != nil {
-				//	return e
-				//}
-
 				return nil
 			})
 		}, func() {
-			app.UpdateServicesView()
+			if e := app.UpdateServicesView(); e != nil {
+				return
+			}
+
 			app.Update(func(gui *gocui.Gui) error {
 				p.Data = append(p.Data, "Command exited....")
 				p.LastUpdated = time.Now()
